@@ -37,6 +37,8 @@ coverage.xml
 # ML artifacts & data (tracked by DVC)
 artifacts/
 Data/
+mlruns/
+mlflow.db
 models/*.pt
 !models/.gitkeep
 

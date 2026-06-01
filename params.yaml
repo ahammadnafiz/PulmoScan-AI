@@ -31,3 +31,7 @@ AUGMENTATION: true
 
 # ─── K-fold cross-validation (train_kfold + evaluate_ensemble stages) ──
 K_FOLDS: 5                  # stratified folds pooled from train+valid → fold ensemble
+
+# ─── MLflow experiment tracking ───────────────────────────────────
+MLFLOW_TRACKING_URI: sqlite:///mlflow.db  # SQLite (local) or remote URI (e.g. http://host:5050)
+MLFLOW_EXPERIMENT_NAME: PulmoScan

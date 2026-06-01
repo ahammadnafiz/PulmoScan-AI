@@ -1,5 +1,6 @@
 from pathlib import Path
 
+import mlflow
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -19,10 +20,15 @@ class Evaluation:
         self.device = get_device()
         self.score: dict | None = None
 
+        # ── MLflow setup ──────────────────────────────────────────────
+        mlflow.set_tracking_uri(config.mlflow_tracking_uri)
+        mlflow.set_experiment(config.mlflow_experiment_name)
+
     def evaluate(self) -> None:
         """Evaluate the single trained checkpoint on the held-out test set."""
         self.score = self._score([self._load(self.config.trained_model_path)])
         logger.info(f"Evaluation scores: {self.score}")
+        self._log_to_mlflow("single-eval")
 
     def evaluate_ensemble(self, model_paths: list[str]) -> None:
         """Evaluate a fold ensemble (averaged softmax) on the held-out test set."""
@@ -32,6 +38,7 @@ class Evaluation:
         logger.info(f"Ensemble evaluation: {len(models)} fold checkpoints")
         self.score = self._score(models)
         logger.info(f"Ensemble evaluation scores: {self.score}")
+        self._log_to_mlflow("ensemble-eval")
 
     def _load(self, model_path) -> nn.Module:
         """Build and load a single self-describing checkpoint in eval mode."""
@@ -104,3 +111,15 @@ class Evaluation:
         if self.score is None:
             raise RuntimeError("Call evaluate() before save_score().")
         save_json(path=Path(self.config.scores_path), data=self.score)
+
+    def _log_to_mlflow(self, run_name: str) -> None:
+        """Log evaluation metrics to MLflow."""
+        if self.score is None:
+            return
+        with mlflow.start_run(run_name=run_name):
+            mlflow.set_tag("stage", "evaluation")
+            mlflow.set_tag("eval_mode", run_name)
+            mlflow.log_params(self.config.all_params)
+            mlflow.log_metrics(
+                {f"test_{k}": v for k, v in self.score.items()}
+            )

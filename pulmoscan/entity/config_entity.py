@@ -46,6 +46,8 @@ class TrainingConfig:
     seed: int
     augmentation: bool
     k_folds: int
+    mlflow_tracking_uri: str
+    mlflow_experiment_name: str
 
 
 @dataclass(frozen=True)
@@ -58,3 +60,5 @@ class EvaluationConfig:
     num_workers: int
     use_tta: bool
     all_params: dict
+    mlflow_tracking_uri: str
+    mlflow_experiment_name: str

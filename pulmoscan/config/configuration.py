@@ -75,6 +75,8 @@ class ConfigurationManager:
             seed=params.SEED,
             augmentation=params.AUGMENTATION,
             k_folds=params.get("K_FOLDS", 5),
+            mlflow_tracking_uri=params.get("MLFLOW_TRACKING_URI", "mlruns"),
+            mlflow_experiment_name=params.get("MLFLOW_EXPERIMENT_NAME", "PulmoScan"),
         )
 
     def get_evaluation_config(self) -> EvaluationConfig:
@@ -91,6 +93,8 @@ class ConfigurationManager:
             num_workers=params.NUM_WORKERS,
             use_tta=params.USE_TTA,
             all_params=dict(params),
+            mlflow_tracking_uri=params.get("MLFLOW_TRACKING_URI", "mlruns"),
+            mlflow_experiment_name=params.get("MLFLOW_EXPERIMENT_NAME", "PulmoScan"),
         )
 
     def get_ensemble_evaluation_config(self) -> EvaluationConfig:
@@ -109,4 +113,6 @@ class ConfigurationManager:
             num_workers=params.NUM_WORKERS,
             use_tta=params.USE_TTA,
             all_params=dict(params),
+            mlflow_tracking_uri=params.get("MLFLOW_TRACKING_URI", "mlruns"),
+            mlflow_experiment_name=params.get("MLFLOW_EXPERIMENT_NAME", "PulmoScan"),
         )

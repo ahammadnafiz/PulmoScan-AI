@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 
+import mlflow
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
@@ -28,6 +29,11 @@ class Training:
         self.config = config
         self.device = get_device()
         self.best_val_acc = 0.0
+        self._global_step = 0  # monotonic epoch counter for MLflow across phases
+
+        # ── MLflow setup ──────────────────────────────────────────────
+        mlflow.set_tracking_uri(config.mlflow_tracking_uri)
+        mlflow.set_experiment(config.mlflow_experiment_name)
 
     def train(self) -> None:
         """Single-model training on the fixed train/valid split (DVC default path)."""
@@ -43,14 +49,22 @@ class Training:
         )
         self._check_num_classes(class_names)
 
-        best = self._train_one(
-            train_ds,
-            val_ds,
-            class_names,
-            train_targets,
-            out_path=Path(self.config.trained_model_path),
-            tag="single",
-        )
+        with mlflow.start_run(run_name="single-train") as run:
+            self._log_params()
+            mlflow.set_tag("training_mode", "single")
+
+            best = self._train_one(
+                train_ds,
+                val_ds,
+                class_names,
+                train_targets,
+                out_path=Path(self.config.trained_model_path),
+                tag="single",
+            )
+
+            mlflow.log_metric("best_val_acc", best)
+            mlflow.log_artifact(str(self.config.trained_model_path))
+            logger.info(f"MLflow run {run.info.run_id} logged")
 
         with open(self.config.class_names_path, "w") as f:
             json.dump({"class_names": class_names}, f, indent=2)
@@ -72,31 +86,50 @@ class Training:
 
         fold_scores: list[float] = []
         class_names: list[str] = []
-        for fold_idx, train_ds, val_ds, class_names, train_targets in build_kfold_datasets(
-            data_root=str(self.config.data_root),
-            image_size=self.config.image_size,
-            augmentation=self.config.augmentation,
-            k=k,
-            seed=self.config.seed,
-        ):
-            self._check_num_classes(class_names)
-            out_path = out_dir / f"model_fold{fold_idx}.pt"
-            logger.info(f"───── Fold {fold_idx + 1}/{k} → {out_path.name} ─────")
-            best = self._train_one(
-                train_ds,
-                val_ds,
-                class_names,
-                train_targets,
-                out_path=out_path,
-                tag=f"fold{fold_idx}",
-            )
-            fold_scores.append(best)
+
+        with mlflow.start_run(run_name="kfold-train") as parent_run:
+            self._log_params()
+            mlflow.log_param("k_folds", k)
+            mlflow.set_tag("training_mode", "kfold")
+
+            for fold_idx, train_ds, val_ds, class_names, train_targets in build_kfold_datasets(
+                data_root=str(self.config.data_root),
+                image_size=self.config.image_size,
+                augmentation=self.config.augmentation,
+                k=k,
+                seed=self.config.seed,
+            ):
+                self._check_num_classes(class_names)
+                out_path = out_dir / f"model_fold{fold_idx}.pt"
+                logger.info(f"───── Fold {fold_idx + 1}/{k} → {out_path.name} ─────")
+
+                with mlflow.start_run(run_name=f"fold-{fold_idx}", nested=True):
+                    mlflow.set_tag("fold", fold_idx)
+                    self._global_step = 0
+                    best = self._train_one(
+                        train_ds,
+                        val_ds,
+                        class_names,
+                        train_targets,
+                        out_path=out_path,
+                        tag=f"fold{fold_idx}",
+                    )
+                    mlflow.log_metric("best_val_acc", best)
+                    mlflow.log_artifact(str(out_path))
+
+                fold_scores.append(best)
+
+            # Log CV summary to the parent run.
+            mean = sum(fold_scores) / len(fold_scores)
+            mlflow.log_metric("cv_mean_val_acc", mean)
+            for i, s in enumerate(fold_scores):
+                mlflow.log_metric(f"fold{i}_best_val_acc", s)
+            logger.info(f"MLflow parent run {parent_run.info.run_id} logged")
 
         # Write class names beside the fold checkpoints (not to the single-model
         # path) so the k-fold and single-training DVC stages keep disjoint outputs.
         with open(out_dir / "class_names.json", "w") as f:
             json.dump({"class_names": class_names}, f, indent=2)
-        mean = sum(fold_scores) / len(fold_scores)
         logger.info(
             f"K-fold complete. Per-fold best val_acc={[round(s, 4) for s in fold_scores]} "
             f"| CV mean={mean:.4f}"
@@ -207,6 +240,18 @@ class Training:
                 f"[{phase}] epoch {epoch}/{epochs} | train_loss={train_loss:.4f} | "
                 f"val_loss={val_loss:.4f} | val_acc={val_acc:.4f}"
             )
+
+            # ── MLflow per-epoch metrics ──────────────────────────────
+            self._global_step += 1
+            mlflow.log_metrics(
+                {
+                    f"{phase}/train_loss": train_loss,
+                    f"{phase}/val_loss": val_loss,
+                    f"{phase}/val_acc": val_acc,
+                },
+                step=self._global_step,
+            )
+
             if val_acc >= self.best_val_acc:
                 self.best_val_acc = val_acc
                 self._save_checkpoint(model, class_names, out_path)
@@ -268,4 +313,25 @@ class Training:
                 "image_size": self.config.image_size,
             },
             out_path,
+        )
+
+    def _log_params(self) -> None:
+        """Log all training hyperparameters to the active MLflow run."""
+        mlflow.log_params(
+            {
+                "backbone": self.config.backbone,
+                "num_classes": self.config.num_classes,
+                "image_size": self.config.image_size,
+                "epochs": self.config.epochs,
+                "batch_size": self.config.batch_size,
+                "learning_rate": self.config.learning_rate,
+                "weight_decay": self.config.weight_decay,
+                "fine_tune_epochs": self.config.fine_tune_epochs,
+                "fine_tune_lr": self.config.fine_tune_lr,
+                "early_stopping_patience": self.config.early_stopping_patience,
+                "label_smoothing": self.config.label_smoothing,
+                "use_class_weights": self.config.use_class_weights,
+                "seed": self.config.seed,
+                "augmentation": self.config.augmentation,
+            }
         )
