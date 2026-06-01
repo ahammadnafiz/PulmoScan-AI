@@ -26,6 +26,9 @@ class Settings(BaseSettings):
     # Reject uploads larger than this (bytes). Default 10 MB.
     max_upload_bytes: int = 10 * 1024 * 1024
 
+    # Maximum number of images accepted in a single /predict/batch request.
+    max_batch_size: int = 32
+
     # Test-time augmentation at inference (averages over a horizontal flip).
     # More accurate, ~2x inference cost. On — the free accuracy lever.
     use_tta: bool = True

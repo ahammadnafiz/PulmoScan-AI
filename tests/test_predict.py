@@ -4,6 +4,7 @@ import io
 from fastapi.testclient import TestClient
 from PIL import Image
 
+from app.config import settings
 from app.services.inference import inference_service
 
 
@@ -51,6 +52,56 @@ def test_predict_rejects_non_image(client: TestClient, monkeypatch):
     monkeypatch.setattr(inference_service, "_models", [object()])
     files = {"file": ("notes.txt", b"hello", "text/plain")}
     response = client.post("/api/v1/predict", files=files)
+    assert response.status_code == 422
+
+
+def test_predict_batch(client: TestClient, monkeypatch):
+    monkeypatch.setattr(inference_service, "_models", [object()])
+    monkeypatch.setattr(inference_service, "predict", _fake_predict)
+    files = [
+        ("files", ("a.png", _png_bytes(), "image/png")),
+        ("files", ("b.png", _png_bytes(), "image/png")),
+    ]
+    response = client.post("/api/v1/predict/batch", files=files)
+    assert response.status_code == 200
+    body = response.json()
+    assert body["count"] == 2
+    assert all(item["success"] for item in body["results"])
+    assert body["results"][0]["prediction"]["label"] == "normal"
+
+
+def test_predict_batch_isolates_bad_image(client: TestClient, monkeypatch):
+    # A non-image in the batch fails only that item; the good one still succeeds.
+    monkeypatch.setattr(inference_service, "_models", [object()])
+    monkeypatch.setattr(inference_service, "predict", _fake_predict)
+    files = [
+        ("files", ("good.png", _png_bytes(), "image/png")),
+        ("files", ("notes.txt", b"hello", "text/plain")),
+    ]
+    response = client.post("/api/v1/predict/batch", files=files)
+    assert response.status_code == 200
+    body = response.json()
+    assert body["count"] == 2
+    assert body["results"][0]["success"] is True
+    assert body["results"][1]["success"] is False
+    assert body["results"][1]["error"]
+
+
+def test_predict_batch_requires_loaded_model(client: TestClient, monkeypatch):
+    monkeypatch.setattr(inference_service, "_models", [])
+    files = [("files", ("scan.png", _png_bytes(), "image/png"))]
+    response = client.post("/api/v1/predict/batch", files=files)
+    assert response.status_code == 503
+
+
+def test_predict_batch_enforces_size_limit(client: TestClient, monkeypatch):
+    monkeypatch.setattr(inference_service, "_models", [object()])
+    monkeypatch.setattr(settings, "max_batch_size", 1)
+    files = [
+        ("files", ("a.png", _png_bytes(), "image/png")),
+        ("files", ("b.png", _png_bytes(), "image/png")),
+    ]
+    response = client.post("/api/v1/predict/batch", files=files)
     assert response.status_code == 422
 
 

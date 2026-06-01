@@ -13,6 +13,20 @@ class PredictionResponse(BaseModel):
     inference_time_ms: float
 
 
+class BatchPredictionItem(BaseModel):
+    """Result for one image in a batch. Either ``prediction`` or ``error`` is set."""
+
+    filename: str | None = None
+    success: bool
+    prediction: PredictionResponse | None = None
+    error: str | None = None
+
+
+class BatchPredictionResponse(BaseModel):
+    count: int
+    results: list[BatchPredictionItem]
+
+
 class ClassesResponse(BaseModel):
     classes: list[str]
     backbone: str
