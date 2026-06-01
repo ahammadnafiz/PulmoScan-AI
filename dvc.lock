@@ -1,0 +1,265 @@
+schema: '2.0'
+stages:
+  data_ingestion:
+    cmd: python -m pulmoscan.pipeline.stage_01_data_ingestion
+    deps:
+    - path: config/config.yaml
+      hash: md5
+      md5: 59165ea72f3f0616f793422b0b5d5ba2
+      size: 792
+    - path: pulmoscan/components/data_ingestion.py
+      hash: md5
+      md5: 7e3b9b9351f1527c9b170e9cb95f25e1
+      size: 1429
+    - path: pulmoscan/pipeline/stage_01_data_ingestion.py
+      hash: md5
+      md5: 90af3520a16a650c5356948d86b7dbaa
+      size: 1047
+    outs:
+    - path: Data
+      hash: md5
+      md5: 3ddc2c0e262e947578d73eeec3119af6.dir
+      size: 124956798
+      nfiles: 1000
+  prepare_base_model:
+    cmd: python -m pulmoscan.pipeline.stage_02_prepare_base_model
+    deps:
+    - path: config/config.yaml
+      hash: md5
+      md5: 59165ea72f3f0616f793422b0b5d5ba2
+      size: 792
+    - path: pulmoscan/components/prepare_base_model.py
+      hash: md5
+      md5: 0e6ea15177a81be24e4a60013fa81c05
+      size: 1576
+    - path: pulmoscan/models/cnn.py
+      hash: md5
+      md5: 7c206f56d851fd6cd3d89e7a3525bc65
+      size: 3921
+    - path: pulmoscan/pipeline/stage_02_prepare_base_model.py
+      hash: md5
+      md5: 1246790ef171f76704c125e8b4e70eaa
+      size: 866
+    params:
+      params.yaml:
+        BACKBONE: convnext_tiny
+        FREEZE_BACKBONE: true
+        IMAGE_SIZE: 224
+        NUM_CLASSES: 4
+        PRETRAINED: true
+    outs:
+    - path: artifacts/prepare_base_model
+      hash: md5
+      md5: 50ff42a26fb89e05faa25d508361ad31.dir
+      size: 222716526
+      nfiles: 2
+  training:
+    cmd: python -m pulmoscan.pipeline.stage_03_model_trainer
+    deps:
+    - path: Data/train
+      hash: md5
+      md5: a5ec1e860f446c95252d30f7b0549167.dir
+      size: 72482362
+      nfiles: 613
+    - path: Data/valid
+      hash: md5
+      md5: 5291c14d685da698cd653d49c8f5c7ef.dir
+      size: 9187861
+      nfiles: 72
+    - path: artifacts/prepare_base_model
+      hash: md5
+      md5: 50ff42a26fb89e05faa25d508361ad31.dir
+      size: 222716526
+      nfiles: 2
+    - path: config/config.yaml
+      hash: md5
+      md5: 59165ea72f3f0616f793422b0b5d5ba2
+      size: 792
+    - path: pulmoscan/components/model_trainer.py
+      hash: md5
+      md5: fae954abab0e76729f8d261237f208c1
+      size: 11083
+    - path: pulmoscan/models/cnn.py
+      hash: md5
+      md5: 7c206f56d851fd6cd3d89e7a3525bc65
+      size: 3921
+    - path: pulmoscan/pipeline/stage_03_model_trainer.py
+      hash: md5
+      md5: 6de7e315e982e1b00993d1a1f53adb70
+      size: 707
+    - path: pulmoscan/utils/data.py
+      hash: md5
+      md5: 1d8226f008625d0893da6ad9dcc4999b
+      size: 7896
+    params:
+      params.yaml:
+        AUGMENTATION: true
+        BACKBONE: convnext_tiny
+        BATCH_SIZE: 32
+        EARLY_STOPPING_PATIENCE: 6
+        EPOCHS: 15
+        FINE_TUNE_EPOCHS: 20
+        FINE_TUNE_LR: 5e-05
+        IMAGE_SIZE: 224
+        LABEL_SMOOTHING: 0.1
+        LEARNING_RATE: 0.001
+        NUM_CLASSES: 4
+        SEED: 42
+        USE_CLASS_WEIGHTS: true
+        VAL_SPLIT: 0.2
+        WEIGHT_DECAY: 0.0001
+    outs:
+    - path: artifacts/training/class_names.json
+      hash: md5
+      md5: 3f05b0b5d80c899f0f11ee5969b64a67
+      size: 120
+    - path: artifacts/training/model.pt
+      hash: md5
+      md5: 7986880d7695ee7b163153b2a7ea4ea2
+      size: 111345243
+  evaluation:
+    cmd: python -m pulmoscan.pipeline.stage_04_evaluation
+    deps:
+    - path: Data/test
+      hash: md5
+      md5: e0a2c120e6f96a38d0407e5cde8d5b8b.dir
+      size: 43286575
+      nfiles: 315
+    - path: artifacts/training/model.pt
+      hash: md5
+      md5: 7986880d7695ee7b163153b2a7ea4ea2
+      size: 111345243
+    - path: config/config.yaml
+      hash: md5
+      md5: 59165ea72f3f0616f793422b0b5d5ba2
+      size: 792
+    - path: pulmoscan/components/evaluation.py
+      hash: md5
+      md5: 2e0b14ae8d706377410ef0c09e4f2992
+      size: 4404
+    - path: pulmoscan/models/cnn.py
+      hash: md5
+      md5: 7c206f56d851fd6cd3d89e7a3525bc65
+      size: 3921
+    - path: pulmoscan/pipeline/stage_04_evaluation.py
+      hash: md5
+      md5: 1c604e2fd2dae2d0e9978c5fcae495b0
+      size: 737
+    - path: pulmoscan/utils/data.py
+      hash: md5
+      md5: 1d8226f008625d0893da6ad9dcc4999b
+      size: 7896
+    params:
+      params.yaml:
+        BATCH_SIZE: 32
+        IMAGE_SIZE: 224
+        USE_TTA: true
+    outs:
+    - path: scores.json
+      hash: md5
+      md5: 8af52be5b27dfdba592571a53302790d
+      size: 121
+  train_kfold:
+    cmd: python scripts/train_kfold.py
+    deps:
+    - path: Data/train
+      hash: md5
+      md5: a5ec1e860f446c95252d30f7b0549167.dir
+      size: 72482362
+      nfiles: 613
+    - path: Data/valid
+      hash: md5
+      md5: 5291c14d685da698cd653d49c8f5c7ef.dir
+      size: 9187861
+      nfiles: 72
+    - path: artifacts/prepare_base_model
+      hash: md5
+      md5: 50ff42a26fb89e05faa25d508361ad31.dir
+      size: 222716526
+      nfiles: 2
+    - path: config/config.yaml
+      hash: md5
+      md5: 59165ea72f3f0616f793422b0b5d5ba2
+      size: 792
+    - path: pulmoscan/components/model_trainer.py
+      hash: md5
+      md5: fae954abab0e76729f8d261237f208c1
+      size: 11083
+    - path: pulmoscan/models/cnn.py
+      hash: md5
+      md5: 7c206f56d851fd6cd3d89e7a3525bc65
+      size: 3921
+    - path: pulmoscan/utils/data.py
+      hash: md5
+      md5: 1d8226f008625d0893da6ad9dcc4999b
+      size: 7896
+    - path: scripts/train_kfold.py
+      hash: md5
+      md5: fbc59ea0ecc52b9fa3c87386b38c43f7
+      size: 2095
+    params:
+      params.yaml:
+        AUGMENTATION: true
+        BACKBONE: convnext_tiny
+        BATCH_SIZE: 32
+        EARLY_STOPPING_PATIENCE: 6
+        EPOCHS: 15
+        FINE_TUNE_EPOCHS: 20
+        FINE_TUNE_LR: 5e-05
+        IMAGE_SIZE: 224
+        K_FOLDS: 5
+        LABEL_SMOOTHING: 0.1
+        LEARNING_RATE: 0.001
+        NUM_CLASSES: 4
+        SEED: 42
+        USE_CLASS_WEIGHTS: true
+        WEIGHT_DECAY: 0.0001
+    outs:
+    - path: artifacts/training/folds
+      hash: md5
+      md5: 3ba2b9c2108cbfebd5f3f0fb4e7f1853.dir
+      size: 556789775
+      nfiles: 5
+  evaluate_ensemble:
+    cmd: python scripts/eval_ensemble.py
+    deps:
+    - path: Data/test
+      hash: md5
+      md5: e0a2c120e6f96a38d0407e5cde8d5b8b.dir
+      size: 43286575
+      nfiles: 315
+    - path: artifacts/training/folds
+      hash: md5
+      md5: 3ba2b9c2108cbfebd5f3f0fb4e7f1853.dir
+      size: 556789775
+      nfiles: 5
+    - path: config/config.yaml
+      hash: md5
+      md5: 59165ea72f3f0616f793422b0b5d5ba2
+      size: 792
+    - path: pulmoscan/components/evaluation.py
+      hash: md5
+      md5: 2e0b14ae8d706377410ef0c09e4f2992
+      size: 4404
+    - path: pulmoscan/models/cnn.py
+      hash: md5
+      md5: 7c206f56d851fd6cd3d89e7a3525bc65
+      size: 3921
+    - path: pulmoscan/utils/data.py
+      hash: md5
+      md5: 1d8226f008625d0893da6ad9dcc4999b
+      size: 7896
+    - path: scripts/eval_ensemble.py
+      hash: md5
+      md5: 14df745407bf770c5076296834fed724
+      size: 1706
+    params:
+      params.yaml:
+        BATCH_SIZE: 32
+        IMAGE_SIZE: 224
+        USE_TTA: true
+    outs:
+    - path: scores_ensemble.json
+      hash: md5
+      md5: 7e8e2087b8ef2f5edd58bc31fd43b5c1
+      size: 121
