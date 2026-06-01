@@ -183,24 +183,36 @@ ruff check .
 
 ## Docker
 
+A **multi-stage** build produces a self-contained, deployable image (~1.9 GB,
+mostly CPU-only PyTorch). The runtime stage installs **serving deps only**
+(`requirements-serve.txt` — no DVC/scikit-learn/test tooling), copies a prebuilt
+venv, runs as a **non-root** user, and has a healthcheck on `/api/v1/health/live`.
+
 ```bash
-# build (installs CPU-only torch)
-docker compose build
-
-# place the trained checkpoint where the container expects it
-cp artifacts/training/model.pt models/model.pt
-
-docker compose up
+# bake the trained checkpoint into the image, then build + run
+cp artifacts/training/model.pt models/model.pt   # if not already there
+docker compose up --build
 ```
 
-The container serves on `:8000`, runs as a non-root user, and has a healthcheck
-hitting `/api/v1/health/live`.
+The single model is **baked into the image** (`MODEL_PATH=/app/models/model.pt`),
+so the container is self-contained — push it to any registry and run it anywhere,
+no volume required. It serves ~91% (single model + TTA) on CPU.
 
-> **Note:** the image ships the **single** model (`MODEL_PATH=models/model.pt`)
-> and does not bundle the fold checkpoints, so the container serves ~91% by
-> default. To run the ensemble in Docker, copy `artifacts/training/folds/` into
-> the image and set `ENSEMBLE_DIR` — at ~111 MB per fold that is a deliberate
-> size/latency trade, not the default.
+**Serve the 5-fold ensemble** (~92%) instead — no rebuild needed, just mount the
+folds (the image's `ENSEMBLE_DIR` already points at `/app/models/folds`, so the
+API auto-detects and averages them):
+
+```bash
+docker run -p 8000:8000 \
+  -v "$PWD/artifacts/training/folds:/app/models/folds:ro" \
+  pulmoscan-ai:latest
+```
+
+(or uncomment the folds volume in `docker-compose.yml`).
+
+**Runtime env** (see [Configuration](#configuration-env-vars)): `WORKERS`
+(default 1 — one model in memory; scale out with replicas, not workers),
+`USE_TTA`, `API_KEY`, `CORS_ORIGINS`.
 
 ---
 

@@ -1,0 +1,17 @@
+# Serving-only dependencies for the Docker runtime image.
+# Deliberately excludes training/pipeline tooling (dvc, scikit-learn, gdown)
+# and dev tooling (pytest, httpx, ruff) — see requirements.txt for the full set.
+# torch + torchvision are installed separately in the Dockerfile from the
+# CPU-only wheel index to keep the image small.
+
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+pydantic==2.10.4
+pydantic-settings==2.7.1
+python-multipart==0.0.20
+loguru==0.7.3
+pillow==11.1.0
+numpy==2.2.1
+python-box==7.3.2
+pyyaml==6.0.2
+tqdm==4.67.1

@@ -1,20 +1,37 @@
+# VCS / tooling
 .git
 .gitignore
-.venv
-venv
+.github
+.dvc
+.dvcignore
+dvc.yaml
+dvc.lock
+
+# Python caches / build
 __pycache__
 *.pyc
+.venv
+venv
+*.egg-info
+
+# Test / lint caches
 .pytest_cache
 .ruff_cache
 .mypy_cache
+
+# Heavy artifacts & data (not baked — single model comes via models/, ensemble
+# via a runtime mount). Keep build context small.
 artifacts
 Data
 logs
 *.log
+scores*.json
+
+# Not needed in the serving image
 docs
 research
 tests
+scripts
+main.py
 .env
 .DS_Store
-.dvc
-.github

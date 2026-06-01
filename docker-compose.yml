@@ -1,22 +1,25 @@
 services:
   api:
     build: .
+    image: pulmoscan-ai:latest
     container_name: pulmoscan-api
     ports:
       - "8000:8000"
     environment:
       ENV: production
-      MODEL_PATH: models/model.pt
+      USE_TTA: "true"
+      WORKERS: "1"                       # 1 worker = model loaded once; scale horizontally
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
-      API_KEY: ${API_KEY:-}
+      API_KEY: ${API_KEY:-}              # set to require X-API-Key on predict routes
     volumes:
-      # Mount the trained checkpoint read-only. Copy artifacts/training/model.pt
-      # here, or point this at wherever your model lives.
-      - ./models:/app/models:ro
       - ./logs:/app/logs
+      # Serve the 5-fold ENSEMBLE instead of the single baked model: uncomment
+      # the mount below. ENSEMBLE_DIR already points at /app/models/folds, so the
+      # API auto-detects the folds and averages them — no other change needed.
+      # - ./artifacts/training/folds:/app/models/folds:ro
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health/live"]
+      test: ["CMD", "curl", "-fsS", "http://localhost:8000/api/v1/health/live"]
       interval: 30s
       timeout: 10s
       retries: 3
