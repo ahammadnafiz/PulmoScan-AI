@@ -132,6 +132,11 @@ schema as the single-model `evaluation` stage, into `scores_ensemble.json` so
 both numbers coexist. (These two stages are heavier than the single-model path —
 invoke them by name rather than relying on a blanket `dvc repro`.)
 
+The trained artifacts (`Data/`, `artifacts/`, `models/*.pt`) are gitignored and
+stored in a **DVC remote** (Google Drive) — run `dvc pull` after cloning to
+fetch them. To set up or reproduce that remote, see
+[docs/guides/dvc-gdrive-setup.md](docs/guides/dvc-gdrive-setup.md).
+
 ### 2. Serve
 
 ```bash
