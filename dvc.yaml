@@ -1,0 +1,122 @@
+stages:
+  data_ingestion:
+    cmd: python -m pulmoscan.pipeline.stage_01_data_ingestion
+    deps:
+      - pulmoscan/pipeline/stage_01_data_ingestion.py
+      - pulmoscan/components/data_ingestion.py
+      - config/config.yaml
+    outs:
+      - Data
+
+  prepare_base_model:
+    cmd: python -m pulmoscan.pipeline.stage_02_prepare_base_model
+    deps:
+      - pulmoscan/pipeline/stage_02_prepare_base_model.py
+      - pulmoscan/components/prepare_base_model.py
+      - pulmoscan/models/cnn.py
+      - config/config.yaml
+    params:
+      - BACKBONE
+      - PRETRAINED
+      - FREEZE_BACKBONE
+      - NUM_CLASSES
+      - IMAGE_SIZE
+    outs:
+      - artifacts/prepare_base_model
+
+  training:
+    cmd: python -m pulmoscan.pipeline.stage_03_model_trainer
+    deps:
+      - pulmoscan/pipeline/stage_03_model_trainer.py
+      - pulmoscan/components/model_trainer.py
+      - pulmoscan/models/cnn.py
+      - pulmoscan/utils/data.py
+      - config/config.yaml
+      - Data/train
+      - Data/valid
+      - artifacts/prepare_base_model
+    params:
+      - BACKBONE
+      - NUM_CLASSES
+      - IMAGE_SIZE
+      - EPOCHS
+      - BATCH_SIZE
+      - LEARNING_RATE
+      - WEIGHT_DECAY
+      - FINE_TUNE_EPOCHS
+      - FINE_TUNE_LR
+      - EARLY_STOPPING_PATIENCE
+      - LABEL_SMOOTHING
+      - USE_CLASS_WEIGHTS
+      - VAL_SPLIT
+      - SEED
+      - AUGMENTATION
+    outs:
+      - artifacts/training/model.pt
+      - artifacts/training/class_names.json
+
+  evaluation:
+    cmd: python -m pulmoscan.pipeline.stage_04_evaluation
+    deps:
+      - pulmoscan/pipeline/stage_04_evaluation.py
+      - pulmoscan/components/evaluation.py
+      - pulmoscan/models/cnn.py
+      - pulmoscan/utils/data.py
+      - config/config.yaml
+      - Data/test
+      - artifacts/training/model.pt
+    params:
+      - IMAGE_SIZE
+      - BATCH_SIZE
+      - USE_TTA
+    metrics:
+      - scores.json:
+          cache: false
+
+  train_kfold:
+    cmd: python scripts/train_kfold.py
+    deps:
+      - scripts/train_kfold.py
+      - pulmoscan/components/model_trainer.py
+      - pulmoscan/models/cnn.py
+      - pulmoscan/utils/data.py
+      - config/config.yaml
+      - Data/train
+      - Data/valid
+      - artifacts/prepare_base_model
+    params:
+      - BACKBONE
+      - NUM_CLASSES
+      - IMAGE_SIZE
+      - EPOCHS
+      - BATCH_SIZE
+      - LEARNING_RATE
+      - WEIGHT_DECAY
+      - FINE_TUNE_EPOCHS
+      - FINE_TUNE_LR
+      - EARLY_STOPPING_PATIENCE
+      - LABEL_SMOOTHING
+      - USE_CLASS_WEIGHTS
+      - SEED
+      - AUGMENTATION
+      - K_FOLDS
+    outs:
+      - artifacts/training/folds
+
+  evaluate_ensemble:
+    cmd: python scripts/eval_ensemble.py
+    deps:
+      - scripts/eval_ensemble.py
+      - pulmoscan/components/evaluation.py
+      - pulmoscan/models/cnn.py
+      - pulmoscan/utils/data.py
+      - config/config.yaml
+      - Data/test
+      - artifacts/training/folds
+    params:
+      - IMAGE_SIZE
+      - BATCH_SIZE
+      - USE_TTA
+    metrics:
+      - scores_ensemble.json:
+          cache: false

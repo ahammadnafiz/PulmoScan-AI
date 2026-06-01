@@ -1,0 +1,29 @@
+# ─── Serving (FastAPI) ───────────────────────────────────────────
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+pydantic==2.10.4
+pydantic-settings==2.7.1
+python-multipart==0.0.20
+loguru==0.7.3
+pillow==11.1.0
+
+# ─── ML (PyTorch) ────────────────────────────────────────────────
+torch==2.5.1
+torchvision==0.20.1
+numpy==2.2.1
+scikit-learn==1.6.1
+
+# ─── Pipeline / config ───────────────────────────────────────────
+dvc==3.59.0
+gdown==5.2.0
+python-box==7.3.2
+pyyaml==6.0.2
+tqdm==4.67.1
+
+# ─── Dev / test ──────────────────────────────────────────────────
+pytest==8.3.4
+httpx==0.28.1
+ruff==0.8.6
+
+# Install the local packages (app, pulmoscan)
+-e .

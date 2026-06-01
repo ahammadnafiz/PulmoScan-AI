@@ -1,0 +1,25 @@
+artifacts_root: artifacts
+
+# Dataset root containing train/ valid/ test/ subdirectories.
+data_root: Data
+
+data_ingestion:
+  root_dir: artifacts/data_ingestion
+  source_URL: https://drive.google.com/file/d/13CkeZHe_sBKkkeVjWzB347bEeRBf4Ml4/view?usp=sharing
+  local_data_file: artifacts/data_ingestion/data.zip
+  unzip_dir: .
+
+prepare_base_model:
+  root_dir: artifacts/prepare_base_model
+  base_model_path: artifacts/prepare_base_model/base_model.pt
+  updated_base_model_path: artifacts/prepare_base_model/base_model_updated.pt
+
+training:
+  root_dir: artifacts/training
+  trained_model_path: artifacts/training/model.pt
+  class_names_path: artifacts/training/class_names.json
+
+evaluation:
+  root_dir: artifacts/evaluation
+  scores_path: scores.json
+  ensemble_scores_path: scores_ensemble.json

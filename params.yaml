@@ -1,0 +1,33 @@
+# ─── Model architecture ───────────────────────────────────────────
+BACKBONE: convnext_tiny     # resnet50 | convnext_tiny | efficientnet_v2_s
+PRETRAINED: true            # ImageNet-pretrained weights (transfer learning)
+FREEZE_BACKBONE: true       # phase 1: freeze backbone, train only the head
+NUM_CLASSES: 4              # adenocarcinoma | large.cell.carcinoma | normal | squamous.cell.carcinoma
+IMAGE_SIZE: 224
+
+# ─── Phase 1: train the classifier head (backbone frozen) ─────────
+EPOCHS: 15
+BATCH_SIZE: 32
+LEARNING_RATE: 0.001
+WEIGHT_DECAY: 0.0001
+
+# ─── Phase 2: unfreeze backbone and fine-tune end to end ──────────
+FINE_TUNE_EPOCHS: 20        # set to 0 to skip fine-tuning
+FINE_TUNE_LR: 0.00005
+EARLY_STOPPING_PATIENCE: 6  # stop a phase after N epochs without val-acc gain (0 = off)
+
+# ─── Loss / class imbalance ───────────────────────────────────────
+LABEL_SMOOTHING: 0.1
+USE_CLASS_WEIGHTS: true     # weight CrossEntropy by inverse class frequency
+
+# ─── Evaluation ───────────────────────────────────────────────────
+USE_TTA: true               # test-time augmentation (average over horizontal flip)
+
+# ─── Data ─────────────────────────────────────────────────────────
+NUM_WORKERS: 4
+VAL_SPLIT: 0.2              # used only if the dataset has no explicit valid/ split
+SEED: 42
+AUGMENTATION: true
+
+# ─── K-fold cross-validation (train_kfold + evaluate_ensemble stages) ──
+K_FOLDS: 5                  # stratified folds pooled from train+valid → fold ensemble
