@@ -89,16 +89,16 @@ save best checkpoint) → **evaluation** (writes `scores.json`).
 Tune everything in `params.yaml`:
 
 
-| Param                                                   | Meaning                                                      |
-| ------------------------------------------------------- | ------------------------------------------------------------ |
-| `BACKBONE`                                              | `convnext_tiny` (default) | `resnet50` | `efficientnet_v2_s` |
-| `PRETRAINED` / `FREEZE_BACKBONE`                        | transfer-learning vs full fine-tune                          |
-| `NUM_CLASSES`                                           | validated against the dataset folders at train time          |
-| `EPOCHS`, `BATCH_SIZE`, `LEARNING_RATE`, `WEIGHT_DECAY` | phase 1 (head) training                                      |
-| `FINE_TUNE_EPOCHS`, `FINE_TUNE_LR`                      | phase 2 (unfrozen backbone) fine-tune                        |
-| `EARLY_STOPPING_PATIENCE`, `LABEL_SMOOTHING`            | regularization / stopping                                    |
-| `USE_CLASS_WEIGHTS`, `USE_TTA`                          | class-imbalance weighting · eval-time augmentation           |
-| `AUGMENTATION`, `VAL_SPLIT`, `SEED`                     | data                                                         |
+| Param                                                   | Meaning                                             |
+| ------------------------------------------------------- | --------------------------------------------------- |
+| `BACKBONE`                                              | `convnext_tiny` (default)                           |
+| `PRETRAINED` / `FREEZE_BACKBONE`                        | transfer-learning vs full fine-tune                 |
+| `NUM_CLASSES`                                           | validated against the dataset folders at train time |
+| `EPOCHS`, `BATCH_SIZE`, `LEARNING_RATE`, `WEIGHT_DECAY` | phase 1 (head) training                             |
+| `FINE_TUNE_EPOCHS`, `FINE_TUNE_LR`                      | phase 2 (unfrozen backbone) fine-tune               |
+| `EARLY_STOPPING_PATIENCE`, `LABEL_SMOOTHING`            | regularization / stopping                           |
+| `USE_CLASS_WEIGHTS`, `USE_TTA`                          | class-imbalance weighting · eval-time augmentation  |
+| `AUGMENTATION`, `VAL_SPLIT`, `SEED`                     | data                                                |
 
 
 Device is auto-selected: **CUDA → MPS (Apple Silicon) → CPU**.
@@ -216,8 +216,8 @@ docker run -p 8000:8000 \
 
 ### Published image (GHCR)
 
-The [`docker-publish`](.github/workflows/docker-publish.yml) workflow builds and
-pushes the image to **GitHub Container Registry** on every `v*.*.*` tag and
+The `[docker-publish](.github/workflows/docker-publish.yml)` workflow builds and
+pushes the image to **GitHub Container Registry** on every `v*.*.`* tag and
 published release:
 
 ```bash
