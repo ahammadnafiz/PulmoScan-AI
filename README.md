@@ -214,6 +214,27 @@ docker run -p 8000:8000 \
 (default 1 — one model in memory; scale out with replicas, not workers),
 `USE_TTA`, `API_KEY`, `CORS_ORIGINS`.
 
+### Published image (GHCR)
+
+The [`docker-publish`](.github/workflows/docker-publish.yml) workflow builds and
+pushes the image to **GitHub Container Registry** on every `v*.*.*` tag and
+published release:
+
+```bash
+docker run -p 8000:8000 ghcr.io/ahammadnafiz/pulmoscan-ai:latest
+```
+
+**Release process** — the checkpoint is gitignored (it lives in DVC/Drive), so
+CI can't see it. To publish a *self-contained* image, attach `model.pt` to the
+GitHub release: the workflow downloads that asset and bakes it in. Without the
+asset it builds a **model-less** image (mount a model at `/app/models` at run
+time). Tag a release:
+
+```bash
+git tag v1.0.0 && git push origin v1.0.0
+# then attach artifacts/training/model.pt to the release on GitHub
+```
+
 ---
 
 ## Configuration (env vars)
