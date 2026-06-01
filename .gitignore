@@ -44,3 +44,4 @@ models/*.pt
 .DS_Store
 .idea/
 .vscode/
+/Data
