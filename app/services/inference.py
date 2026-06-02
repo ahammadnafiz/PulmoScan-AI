@@ -15,6 +15,12 @@ import torch.nn.functional as F
 from loguru import logger
 from PIL import Image
 
+from app.services.explain import (
+    grad_cam,
+    overlay_on_image,
+    resolve_target_layer,
+    to_base64_png,
+)
 from pulmoscan.models import build_model, get_eval_transforms
 from pulmoscan.utils.common import get_device
 
@@ -204,6 +210,43 @@ class InferenceService:
                 for name, p in zip(self._class_names, probs.tolist(), strict=True)
             ],
             "inference_time_ms": round(inference_ms, 3),
+        }
+
+    def explain(self, image_bytes: bytes) -> dict:
+        """Run Grad-CAM on a single model and return prediction + a heatmap overlay.
+
+        Deliberately *not* under ``@torch.no_grad`` — Grad-CAM needs gradients.
+        Uses the first loaded model only (never the full ensemble) and skips TTA
+        to keep a single forward+backward pass cheap.
+        """
+        if not self._models or self._transforms is None:
+            raise RuntimeError("Model is not loaded.")
+
+        try:
+            image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
+        except Exception as e:  # noqa: BLE001 — surface a clean client error
+            raise ValueError(f"Could not decode image: {e}") from e
+
+        model = self._models[0]
+        target_layer = resolve_target_layer(model, self._backbone)
+        tensor = self._transforms(image).unsqueeze(0).to(self._device)
+
+        start = time.time()
+        cam, probs = grad_cam(model, target_layer, tensor)
+        inference_ms = (time.time() - start) * 1000
+
+        top_idx = int(probs.argmax())
+        overlay = overlay_on_image(image, cam)
+
+        return {
+            "label": self._class_names[top_idx],
+            "confidence": round(float(probs[top_idx]), 6),
+            "probabilities": [
+                {"label": name, "probability": round(float(p), 6)}
+                for name, p in zip(self._class_names, probs.tolist(), strict=True)
+            ],
+            "inference_time_ms": round(inference_ms, 3),
+            "heatmap": to_base64_png(overlay),
         }
 
 

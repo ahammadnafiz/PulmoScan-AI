@@ -41,6 +41,7 @@ type BatchItem = {
   status: Status;
   prediction?: Prediction;
   error?: string;
+  heatmap?: string; // base64 PNG, fetched on demand when the result modal is opened
 };
 
 function pretty(label: string): string {
@@ -86,12 +87,19 @@ export default function Home() {
   const [singleDragging, setSingleDragging] = useState(false);
   const singleFileInput = useRef<HTMLInputElement>(null);
 
+  // Grad-CAM heatmap (base64 PNG overlay) for the current single scan.
+  const [heatmap, setHeatmap] = useState<string | null>(null);
+  const [showHeatmap, setShowHeatmap] = useState(false);
+  const [explaining, setExplaining] = useState(false);
+
   // --- Batch Mode State ---
   const [batchItems, setBatchItems] = useState<BatchItem[]>([]);
   const [batchLoading, setBatchLoading] = useState(false);
   const [batchDragging, setBatchDragging] = useState(false);
   const [openBatchId, setOpenBatchId] = useState<string | null>(null);
-  
+  const [batchShowHeatmap, setBatchShowHeatmap] = useState(false);
+  const [batchExplaining, setBatchExplaining] = useState(false);
+
   const batchFileInput = useRef<HTMLInputElement>(null);
   const batchFolderInput = useRef<HTMLInputElement>(null);
 
@@ -117,9 +125,15 @@ export default function Home() {
   }, [singleItem, batchItems]);
 
   // --- Single Mode Functions ---
+  function resetHeatmap() {
+    setHeatmap(null);
+    setShowHeatmap(false);
+  }
+
   function handleSingleSelect(file: File) {
     if (!file.type.startsWith("image/")) return;
     if (singleItem) URL.revokeObjectURL(singleItem.url);
+    resetHeatmap();
     setSingleItem({
       file,
       url: URL.createObjectURL(file),
@@ -130,6 +144,7 @@ export default function Home() {
   async function analyzeSingle() {
     if (!singleItem || singleLoading) return;
     setSingleLoading(true);
+    resetHeatmap();
     setSingleItem((prev) => prev ? { ...prev, status: "analyzing", prediction: undefined, error: undefined } : null);
 
     const form = new FormData();
@@ -157,7 +172,36 @@ export default function Home() {
 
   function clearSingle() {
     if (singleItem) URL.revokeObjectURL(singleItem.url);
+    resetHeatmap();
     setSingleItem(null);
+  }
+
+  // Fetch the Grad-CAM heatmap once, then toggle between it and the original.
+  async function toggleHeatmap() {
+    if (!singleItem) return;
+    if (heatmap) {
+      setShowHeatmap((v) => !v);
+      return;
+    }
+    setExplaining(true);
+    const form = new FormData();
+    form.append("file", singleItem.file);
+    const headers = API_KEY ? { "X-API-Key": API_KEY } : undefined;
+    try {
+      const res = await fetch(`${API}/api/v1/predict/explain`, {
+        method: "POST",
+        body: form,
+        headers,
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.detail || `Request failed (${res.status})`);
+      setHeatmap(data.heatmap);
+      setShowHeatmap(true);
+    } catch {
+      // Non-fatal: the prediction still stands without the heatmap.
+    } finally {
+      setExplaining(false);
+    }
   }
 
   // --- Batch Mode Functions ---
@@ -236,6 +280,47 @@ export default function Home() {
       }
     }
     setBatchLoading(false);
+  }
+
+  function openBatch(id: string) {
+    setOpenBatchId(id);
+    setBatchShowHeatmap(false);
+  }
+
+  function closeBatch() {
+    setOpenBatchId(null);
+    setBatchShowHeatmap(false);
+  }
+
+  // Grad-CAM for the open batch item: fetch once (cached on the item), then toggle.
+  async function toggleBatchHeatmap() {
+    const item = batchItems.find((i) => i.id === openBatchId);
+    if (!item) return;
+    if (item.heatmap) {
+      setBatchShowHeatmap((v) => !v);
+      return;
+    }
+    setBatchExplaining(true);
+    const form = new FormData();
+    form.append("file", item.file);
+    const headers = API_KEY ? { "X-API-Key": API_KEY } : undefined;
+    try {
+      const res = await fetch(`${API}/api/v1/predict/explain`, {
+        method: "POST",
+        body: form,
+        headers,
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.detail || `Request failed (${res.status})`);
+      setBatchItems((prev) =>
+        prev.map((it) => (it.id === item.id ? { ...it, heatmap: data.heatmap } : it)),
+      );
+      setBatchShowHeatmap(true);
+    } catch {
+      // Non-fatal: the classification still stands without the heatmap.
+    } finally {
+      setBatchExplaining(false);
+    }
   }
 
   // Derived Batch variables
@@ -369,10 +454,25 @@ export default function Home() {
               <div style={{ position: "relative", borderRadius: "10px", overflow: "hidden", background: "#000", maxHeight: "360px" }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={singleItem.url}
+                  src={showHeatmap && heatmap ? `data:image/png;base64,${heatmap}` : singleItem.url}
                   alt={singleItem.file.name}
                   style={{ width: "100%", height: "100%", maxHeight: "360px", objectFit: "contain", display: "block" }}
                 />
+
+                {showHeatmap && heatmap && (
+                  <span style={{
+                    position: "absolute",
+                    bottom: "12px",
+                    left: "12px",
+                    background: "rgba(0,0,0,0.7)",
+                    color: "#fff",
+                    fontSize: "11px",
+                    padding: "3px 8px",
+                    borderRadius: "6px"
+                  }}>
+                    Grad-CAM · where the model looked
+                  </span>
+                )}
                 
                 {singleItem.status === "analyzing" && (
                   <div style={{
@@ -482,9 +582,14 @@ export default function Home() {
                     <span>⚡ inference: <strong>{singleItem.prediction.inference_time_ms.toFixed(0)} ms</strong></span>
                   </div>
 
-                  <button className="btn ghost" onClick={clearSingle} style={{ alignSelf: "center", marginTop: "10px", width: "120px" }}>
-                    Scan New
-                  </button>
+                  <div className="actions" style={{ justifyContent: "center", marginTop: "10px" }}>
+                    <button className="btn ghost" onClick={toggleHeatmap} disabled={explaining}>
+                      {explaining ? "Generating…" : showHeatmap ? "Show Original" : "🔥 Show Grad-CAM"}
+                    </button>
+                    <button className="btn ghost" onClick={clearSingle}>
+                      Scan New
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
@@ -577,7 +682,7 @@ export default function Home() {
                   <li
                     key={it.id}
                     className={`tile ${it.status}`}
-                    onClick={() => it.status === "done" && setOpenBatchId(it.id)}
+                    onClick={() => it.status === "done" && openBatch(it.id)}
                     style={{ transition: "transform 0.15s, box-shadow 0.15s" }}
                   >
                     <div className="tile-media">
@@ -649,19 +754,32 @@ export default function Home() {
       {/* 🎂 BATCH RESULT DETAIL MODAL                              */}
       {/* ======================================================== */}
       {openBatchItem?.prediction && (
-        <div className="modal-backdrop" onClick={() => setOpenBatchId(null)}>
+        <div className="modal-backdrop" onClick={closeBatch}>
           <div className="modal" onClick={(e) => e.stopPropagation()} style={{ animation: "scaleUp 0.2s cubic-bezier(0.16, 1, 0.3, 1)" }}>
-            <button className="modal-close" aria-label="Close" onClick={() => setOpenBatchId(null)}>
+            <button className="modal-close" aria-label="Close" onClick={closeBatch}>
               ×
             </button>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={openBatchItem.url} alt={openBatchItem.file.name} className="modal-img" />
+            <img
+              src={batchShowHeatmap && openBatchItem.heatmap ? `data:image/png;base64,${openBatchItem.heatmap}` : openBatchItem.url}
+              alt={openBatchItem.file.name}
+              className="modal-img"
+            />
             <div className="verdict">
               <span className="verdict-label">{pretty(openBatchItem.prediction.label)}</span>
               <span className="verdict-conf" style={{ color: "#319795" }}>
                 {(openBatchItem.prediction.confidence * 100).toFixed(1)}%
               </span>
             </div>
+
+            <button
+              className="btn ghost"
+              onClick={toggleBatchHeatmap}
+              disabled={batchExplaining}
+              style={{ alignSelf: "center", width: "200px" }}
+            >
+              {batchExplaining ? "Generating…" : batchShowHeatmap ? "Show Original" : "🔥 Show Grad-CAM"}
+            </button>
             
             <ul className="bars">
               {openBatchSorted.map((p) => (

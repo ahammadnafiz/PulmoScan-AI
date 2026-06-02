@@ -13,6 +13,14 @@ class PredictionResponse(BaseModel):
     inference_time_ms: float
 
 
+class ExplanationResponse(PredictionResponse):
+    """A prediction plus a Grad-CAM heatmap blended over the input image."""
+
+    heatmap: str = Field(
+        ..., description="Base64-encoded PNG: Grad-CAM heatmap overlaid on the input scan."
+    )
+
+
 class BatchPredictionItem(BaseModel):
     """Result for one image in a batch. Either ``prediction`` or ``error`` is set."""
 

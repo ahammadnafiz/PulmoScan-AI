@@ -9,6 +9,7 @@ from app.schemas.response import (
     BatchPredictionItem,
     BatchPredictionResponse,
     ClassesResponse,
+    ExplanationResponse,
     PredictionResponse,
 )
 from app.services.inference import inference_service
@@ -118,6 +119,38 @@ async def predict_batch(
             )
 
     return BatchPredictionResponse(count=len(results), results=results)
+
+
+@router.post(
+    "/explain",
+    response_model=ExplanationResponse,
+    summary="Classify an image and return a Grad-CAM heatmap",
+)
+async def explain(file: UploadFile = File(..., description="CT scan image")) -> ExplanationResponse:
+    """Classify a chest CT-scan image and overlay a Grad-CAM heatmap.
+
+    Runs on a single model (not the ensemble) with gradients enabled, so it is
+    heavier than ``/predict`` but shows *where* the model looked.
+    """
+    _ensure_ready()
+    if file.content_type not in ALLOWED_CONTENT_TYPES:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Unsupported content type '{file.content_type}'. Allowed: {sorted(ALLOWED_CONTENT_TYPES)}",
+        )
+    content = await file.read()
+    if len(content) > settings.max_upload_bytes:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail=f"File exceeds {settings.max_upload_bytes} bytes.",
+        )
+    try:
+        result = inference_service.explain(content)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(e)
+        ) from e
+    return ExplanationResponse(**result)
 
 
 @router.post("/base64", response_model=PredictionResponse, summary="Classify a base64 image")

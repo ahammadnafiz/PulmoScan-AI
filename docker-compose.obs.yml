@@ -19,6 +19,11 @@ services:
       - "3030:3000" # Expose on 3030 to avoid clash with Next.js web app and other services
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - ./config/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./config/grafana/dashboards:/etc/grafana/dashboards:ro
+    depends_on:
+      - prometheus
     restart: unless-stopped
 
   mlflow:

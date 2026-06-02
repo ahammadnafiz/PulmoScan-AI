@@ -112,3 +112,25 @@ def test_predict_base64(client: TestClient, monkeypatch):
     response = client.post("/api/v1/predict/base64", json=payload)
     assert response.status_code == 200
     assert response.json()["label"] == "normal"
+
+
+def _fake_explain(image_bytes: bytes) -> dict:
+    return {**_fake_predict(image_bytes), "heatmap": base64.b64encode(_png_bytes()).decode()}
+
+
+def test_predict_explain(client: TestClient, monkeypatch):
+    monkeypatch.setattr(inference_service, "_models", [object()])
+    monkeypatch.setattr(inference_service, "explain", _fake_explain)
+    files = {"file": ("scan.png", _png_bytes(), "image/png")}
+    response = client.post("/api/v1/predict/explain", files=files)
+    assert response.status_code == 200
+    body = response.json()
+    assert body["label"] == "normal"
+    assert body["heatmap"]
+
+
+def test_predict_explain_requires_loaded_model(client: TestClient, monkeypatch):
+    monkeypatch.setattr(inference_service, "_models", [])
+    files = {"file": ("scan.png", _png_bytes(), "image/png")}
+    response = client.post("/api/v1/predict/explain", files=files)
+    assert response.status_code == 503

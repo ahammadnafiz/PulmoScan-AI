@@ -1,0 +1,112 @@
+{
+  "uid": "pulmoscan-overview",
+  "title": "PulmoScan — Model & Input Monitoring",
+  "tags": ["pulmoscan", "ml", "monitoring"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "time": { "from": "now-6h", "to": "now" },
+  "templating": { "list": [] },
+  "annotations": { "list": [] },
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "Prediction rate by class",
+      "description": "Predictions per second, split by predicted class (rate over 5m).",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "fieldConfig": { "defaults": { "unit": "reqps" }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "sum by (predicted_class) (rate(prediction_count_total[5m]))",
+          "legendFormat": "{{predicted_class}}"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "piechart",
+      "title": "Prediction class distribution (cumulative)",
+      "description": "Total predictions per class since process start.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "options": { "legend": { "showLegend": true, "placement": "right" }, "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "sum by (predicted_class) (prediction_count_total)",
+          "legendFormat": "{{predicted_class}}",
+          "instant": true
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "Mean prediction confidence",
+      "description": "Average top-class confidence (prediction_confidence histogram, 5m rate).",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "fieldConfig": { "defaults": { "unit": "percentunit", "min": 0, "max": 1 }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "sum(rate(prediction_confidence_sum[5m])) / sum(rate(prediction_confidence_count[5m]))",
+          "legendFormat": "mean confidence"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "Mean prediction entropy (uncertainty / drift proxy)",
+      "description": "Normalized entropy of the softmax. A sustained rise is an out-of-distribution signal — the live proxy until Evidently drift-share is exported as a metric.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "fieldConfig": { "defaults": { "unit": "short", "min": 0, "max": 1 }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "sum(rate(prediction_entropy_sum[5m])) / sum(rate(prediction_entropy_count[5m]))",
+          "legendFormat": "mean entropy"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Input image features (mean)",
+      "description": "Mean brightness / contrast / sharpness of incoming scans. Shifts flag a new scanner or preprocessing change (input drift).",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 16 },
+      "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "sum(rate(image_brightness_sum[5m])) / sum(rate(image_brightness_count[5m]))",
+          "legendFormat": "brightness"
+        },
+        {
+          "refId": "B",
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "sum(rate(image_contrast_sum[5m])) / sum(rate(image_contrast_count[5m]))",
+          "legendFormat": "contrast"
+        },
+        {
+          "refId": "C",
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "sum(rate(image_sharpness_sum[5m])) / sum(rate(image_sharpness_count[5m]))",
+          "legendFormat": "sharpness"
+        }
+      ]
+    }
+  ]
+}
