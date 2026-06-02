@@ -74,7 +74,7 @@ stages:
           cache: false
 
   train_kfold:
-    cmd: python scripts/train_kfold.py
+    cmd: PYTHONPATH=. python scripts/train_kfold.py
     deps:
       - scripts/train_kfold.py
       - pulmoscan/components/model_trainer.py
@@ -104,7 +104,7 @@ stages:
       - artifacts/training/folds
 
   evaluate_ensemble:
-    cmd: python scripts/eval_ensemble.py
+    cmd: PYTHONPATH=. python scripts/eval_ensemble.py
     deps:
       - scripts/eval_ensemble.py
       - pulmoscan/components/evaluation.py
