@@ -124,6 +124,14 @@ class InferenceService:
         except Exception as e:  # noqa: BLE001 — surface a clean client error
             raise ValueError(f"Could not decode image: {e}") from e
 
+        # Extract features for monitoring
+        try:
+            from pulmoscan.monitoring import extract_image_features
+            features = extract_image_features(image)
+        except Exception as e:
+            logger.error(f"Failed to extract monitoring features: {e}")
+            features = {}
+
         tensor = self._transforms(image).unsqueeze(0).to(self._device)
 
         start = time.time()
@@ -138,9 +146,59 @@ class InferenceService:
         inference_ms = (time.time() - start) * 1000
 
         top_idx = int(probs.argmax().item())
+        label = self._class_names[top_idx]
+        confidence = float(probs[top_idx])
+
+        entropy = 0.0
+        try:
+            from pulmoscan.monitoring import normalized_entropy
+            entropy = normalized_entropy(probs.tolist())
+        except Exception as e:
+            logger.error(f"Failed to compute normalized entropy: {e}")
+
+        # Record custom Prometheus metrics
+        try:
+            from app.core.metrics import (
+                PREDICTION_CONFIDENCE,
+                PREDICTION_COUNT,
+                PREDICTION_ENTROPY,
+                IMAGE_BRIGHTNESS,
+                IMAGE_CONTRAST,
+                IMAGE_SHARPNESS,
+            )
+            PREDICTION_COUNT.labels(predicted_class=label).inc()
+            PREDICTION_CONFIDENCE.labels(predicted_class=label).observe(confidence)
+            PREDICTION_ENTROPY.labels(predicted_class=label).observe(entropy)
+            if features:
+                IMAGE_BRIGHTNESS.observe(features.get("brightness_mean", 0.0))
+                IMAGE_CONTRAST.observe(features.get("contrast_std", 0.0))
+                IMAGE_SHARPNESS.observe(features.get("sharpness", 0.0))
+        except Exception as e:
+            logger.error(f"Failed to record Prometheus metrics: {e}")
+
+        # Append to prediction logs/predictions.jsonl
+        try:
+            import json
+            import os
+            from datetime import datetime, timezone
+            log_dir = "logs"
+            os.makedirs(log_dir, exist_ok=True)
+            log_path = os.path.join(log_dir, "predictions.jsonl")
+            log_entry = {
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "predicted_label": label,
+                "confidence": round(confidence, 6),
+                "entropy": round(entropy, 6),
+                **features
+            }
+            with open(log_path, "a") as f:
+                f.write(json.dumps(log_entry) + "\n")
+        except Exception as e:
+            logger.error(f"Failed to log prediction to predictions.jsonl: {e}")
+
         return {
-            "label": self._class_names[top_idx],
-            "confidence": round(float(probs[top_idx]), 6),
+            "label": label,
+            "confidence": round(confidence, 6),
             "probabilities": [
                 {"label": name, "probability": round(float(p), 6)}
                 for name, p in zip(self._class_names, probs.tolist(), strict=True)

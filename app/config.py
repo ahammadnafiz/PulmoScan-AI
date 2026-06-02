@@ -17,6 +17,11 @@ class Settings(BaseSettings):
     # instead of the single model_path. Empty disables ensembling.
     ensemble_dir: str = "artifacts/training/folds"
 
+    # MLflow Model Registry settings
+    mlflow_tracking_uri: str = "sqlite:///mlflow.db"
+    mlflow_model_name: str = "PulmoScan"
+    use_registry: bool = False  # Set to True to fetch the @champion from MLflow registry at boot
+
     # Optional API-key gate. Leave empty to disable authentication.
     api_key: str = ""
 

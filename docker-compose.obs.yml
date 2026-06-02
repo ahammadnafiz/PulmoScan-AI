@@ -1,0 +1,39 @@
+services:
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: pulmoscan-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./config/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    restart: unless-stopped
+    depends_on:
+      - api
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: pulmoscan-grafana
+    ports:
+      - "3030:3000" # Expose on 3030 to avoid clash with Next.js web app and other services
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    restart: unless-stopped
+
+  mlflow:
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM python:3.11-slim
+        RUN pip install mlflow
+        WORKDIR /app
+    container_name: pulmoscan-mlflow
+    ports:
+      - "5050:5050"
+    volumes:
+      - ./mlflow.db:/app/mlflow.db
+      - ./artifacts:/app/artifacts
+      - ./mlruns:/app/mlruns
+    command: mlflow ui --backend-store-uri sqlite:///mlflow.db --port 5050 --host 0.0.0.0 --allowed-hosts 'localhost:5050,127.0.0.1:5050,localhost,127.0.0.1'
+    restart: unless-stopped

@@ -26,5 +26,15 @@ pytest==8.3.4
 httpx==0.28.1
 ruff==0.8.6
 
+# ─── MLOps Monitoring & Drift ────────────────────────────────────
+prometheus-client==0.25.0
+prometheus-fastapi-instrumentator
+evidently==0.4.40
+uuid6
+deprecation
+dynaconf
+litestar
+watchdog
+
 # Install the local packages (app, pulmoscan)
 -e .
