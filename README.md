@@ -1,5 +1,9 @@
 # 🫁 PulmoScan AI
 
+<p align="center">
+  <img src="docs/mlops-architecture.svg" alt="PulmoScan AI — MLOps architecture: offline training &amp; registry, online real-time serving, observability with drift-triggered retraining" width="100%">
+</p>
+
 Production-ready chest **CT-scan classifier** (4 classes: adenocarcinoma,
 large-cell carcinoma, normal, squamous-cell carcinoma). A PyTorch
 transfer-learning CNN (**ConvNeXt-Tiny** by default) trained through a

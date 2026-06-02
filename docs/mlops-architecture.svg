@@ -1,0 +1,170 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1520 880" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#94a3b8"/>
+    </marker>
+    <marker id="ar" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7.5" markerHeight="7.5" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#dc2626"/>
+    </marker>
+    <marker id="ag" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#059669"/>
+    </marker>
+    <filter id="s" x="-6%" y="-14%" width="112%" height="132%">
+      <feDropShadow dx="0" dy="1.5" stdDeviation="2.5" flood-color="#0f172a" flood-opacity="0.10"/>
+    </filter>
+    <style>
+      .zone { font-size: 11px; font-weight: 800; letter-spacing: 1.6px; }
+      .nt   { font-size: 13.5px; font-weight: 700; fill: #0f172a; }
+      .ns   { font-size: 10.5px; fill: #64748b; }
+      .el   { font-size: 10px; font-weight: 600; fill: #64748b; }
+      .ct   { font-size: 9px; font-weight: 600; fill: #475569; }
+      .bt   { font-size: 10px; font-weight: 700; }
+    </style>
+  </defs>
+
+  <rect x="0" y="0" width="1520" height="880" fill="#ffffff"/>
+
+  <!-- ============ HEADER ============ -->
+  <text x="40" y="52" font-size="23" font-weight="800" fill="#0f172a">PulmoScan AI — MLOps Architecture</text>
+  <text x="42" y="76" font-size="11.5" fill="#64748b">Chest CT-scan classifier · data → train → registry → serve → monitor, closed by drift-triggered retraining.</text>
+  <rect x="1196" y="34" width="284" height="32" rx="9" fill="#f1f5f9" stroke="#e2e8f0"/>
+  <text x="1213" y="54" font-size="11" font-weight="700" fill="#334155">CI/CD · GitHub Actions → Docker → GHCR</text>
+
+  <!-- pipeline body shifted down for breathing room under the header -->
+  <g transform="translate(0,42)">
+
+  <!-- ============ PLANE BACKGROUNDS ============ -->
+  <rect x="108" y="100" width="1372" height="184" rx="16" fill="#eff6ff"/>
+  <text x="128" y="128" class="zone" fill="#2563eb">OFFLINE · TRAINING &amp; REGISTRY</text>
+  <rect x="1304" y="112" width="160" height="24" rx="12" fill="#dbeafe"/>
+  <text x="1384" y="128" text-anchor="middle" class="bt" fill="#1e40af">5-fold CV · 95.3%</text>
+
+  <rect x="108" y="320" width="1372" height="184" rx="16" fill="#ecfdf5"/>
+  <text x="128" y="348" class="zone" fill="#059669">ONLINE · REAL-TIME SERVING</text>
+  <rect x="1288" y="332" width="176" height="24" rx="12" fill="#d1fae5"/>
+  <text x="1376" y="348" text-anchor="middle" class="bt" fill="#047857">92.1% test · ~57 ms</text>
+
+  <rect x="108" y="540" width="1372" height="184" rx="16" fill="#fdf2f8"/>
+  <text x="128" y="568" class="zone" fill="#db2777">OBSERVABILITY · FEEDBACK LOOP</text>
+  <rect x="1300" y="552" width="164" height="24" rx="12" fill="#fce7f3"/>
+  <text x="1382" y="568" text-anchor="middle" class="bt" fill="#9d174d">drift → auto-retrain</text>
+
+  <!-- ============ CONNECTORS (under nodes) ============ -->
+  <g fill="none" stroke="#94a3b8" stroke-width="1.6">
+    <!-- training row -->
+    <path d="M370,184 L432,184" marker-end="url(#a)"/>
+    <path d="M632,184 L694,184" marker-end="url(#a)"/>
+    <path d="M894,184 L956,184" marker-end="url(#a)"/>
+    <path d="M1156,184 L1173,184" marker-end="url(#a)"/>
+    <path d="M1203,184 L1218,184" marker-end="url(#a)"/>
+    <!-- registry -> inference -->
+    <path d="M1319,212 L1319,372" marker-end="url(#a)"/>
+    <!-- serving row -->
+    <path d="M632,400 L694,400" marker-end="url(#a)"/>
+    <path d="M894,400 L956,400" marker-end="url(#a)"/>
+    <path d="M1156,400 L1218,400" marker-end="url(#a)"/>
+    <!-- serving -> monitoring -->
+    <path d="M1319,428 L1319,592" marker-end="url(#a)"/>
+    <path d="M1057,428 L1057,592" marker-end="url(#a)"/>
+    <!-- monitoring row (right -> left) -->
+    <path d="M958,624 L896,624" marker-end="url(#a)"/>
+    <path d="M696,624 L634,624" marker-end="url(#a)"/>
+  </g>
+
+  <!-- champion-gate diamond on promote edge -->
+  <polygon points="1188,170 1202,184 1188,198 1174,184" fill="#fff" stroke="#d97706" stroke-width="1.5"/>
+  <text x="1188" y="214" text-anchor="middle" class="ct" fill="#b45309">champion gate</text>
+
+  <!-- prediction + Grad-CAM return -->
+  <path d="M1295,428 L1295,470 L533,470 L533,428" fill="none" stroke="#059669" stroke-width="1.5" marker-end="url(#ag)"/>
+
+  <!-- closed retraining loop (left gutter) -->
+  <path d="M432,624 L64,624 L64,88 L533,88 L533,156" fill="none" stroke="#dc2626" stroke-width="1.8" stroke-dasharray="7 5" marker-end="url(#ar)"/>
+
+  <!-- ============ EDGE LABELS ============ -->
+  <text x="1330" y="270" class="el">load @champion</text>
+  <text x="1330" y="286" class="ct" fill="#64748b">self-describing model.pt</text>
+  <text x="1330" y="520" class="el">/metrics</text>
+  <text x="1066" y="520" class="el">log</text>
+  <text x="927" y="617" text-anchor="middle" class="el">features</text>
+  <text x="665" y="617" text-anchor="middle" class="el">drift score</text>
+  <text x="914" y="464" text-anchor="middle" class="el" fill="#059669">prediction + Grad-CAM</text>
+  <text transform="rotate(-90 54 380)" x="54" y="380" text-anchor="middle" class="el" fill="#dc2626" font-weight="700">drift-triggered retraining</text>
+
+  <!-- ============ NODES ============ -->
+  <!-- TRAINING -->
+  <g filter="url(#s)">
+    <rect x="172" y="156" width="198" height="56" rx="10" fill="#fff" stroke="#2563eb" stroke-width="1.5"/>
+    <rect x="434" y="156" width="198" height="56" rx="10" fill="#fff" stroke="#2563eb" stroke-width="1.5"/>
+    <rect x="696" y="156" width="198" height="56" rx="10" fill="#fff" stroke="#2563eb" stroke-width="1.5"/>
+    <rect x="958" y="156" width="198" height="56" rx="10" fill="#fff" stroke="#2563eb" stroke-width="1.5"/>
+    <rect x="1220" y="156" width="198" height="56" rx="10" fill="#fff" stroke="#d97706" stroke-width="1.8"/>
+  </g>
+  <text x="271" y="181" text-anchor="middle" class="nt">Dataset</text><text x="271" y="197" text-anchor="middle" class="ns">DVC-tracked</text>
+  <text x="533" y="181" text-anchor="middle" class="nt">Training Pipeline</text><text x="533" y="197" text-anchor="middle" class="ns">ConvNeXt-Tiny · transfer</text>
+  <text x="795" y="181" text-anchor="middle" class="nt">Evaluation</text><text x="795" y="197" text-anchor="middle" class="ns">held-out + TTA</text>
+  <text x="1057" y="181" text-anchor="middle" class="nt">MLflow</text><text x="1057" y="197" text-anchor="middle" class="ns">experiment tracking</text>
+  <text x="1319" y="181" text-anchor="middle" class="nt">Model Registry</text><text x="1319" y="197" text-anchor="middle" class="ns" fill="#b45309">aliased versions</text>
+
+  <!-- training chips -->
+  <g>
+    <rect x="242" y="228" width="58" height="17" rx="8.5" fill="#eef2f6"/><text x="271" y="240" text-anchor="middle" class="ct">4 classes</text>
+    <rect x="475" y="228" width="50" height="17" rx="8.5" fill="#eef2f6"/><text x="500" y="240" text-anchor="middle" class="ct">2-phase</text>
+    <rect x="531" y="228" width="62" height="17" rx="8.5" fill="#eef2f6"/><text x="562" y="240" text-anchor="middle" class="ct">5-fold CV</text>
+    <rect x="747" y="228" width="34" height="17" rx="8.5" fill="#eef2f6"/><text x="764" y="240" text-anchor="middle" class="ct">TTA</text>
+    <rect x="787" y="228" width="58" height="17" rx="8.5" fill="#eef2f6"/><text x="816" y="240" text-anchor="middle" class="ct">315 test</text>
+    <rect x="1003" y="228" width="108" height="17" rx="8.5" fill="#eef2f6"/><text x="1057" y="240" text-anchor="middle" class="ct">params · metrics · artifacts</text>
+    <rect x="1244" y="228" width="70" height="17" rx="8.5" fill="#fef3c7"/><text x="1279" y="240" text-anchor="middle" class="ct" fill="#b45309">@champion</text>
+    <rect x="1318" y="228" width="78" height="17" rx="8.5" fill="#eef2f6"/><text x="1357" y="240" text-anchor="middle" class="ct">@challenger</text>
+  </g>
+
+  <!-- SERVING -->
+  <g filter="url(#s)">
+    <rect x="434" y="372" width="198" height="56" rx="10" fill="#fff" stroke="#059669" stroke-width="1.5"/>
+    <rect x="696" y="372" width="198" height="56" rx="10" fill="#fff" stroke="#059669" stroke-width="1.5"/>
+    <rect x="958" y="372" width="198" height="56" rx="10" fill="#fff" stroke="#059669" stroke-width="1.5"/>
+    <rect x="1220" y="372" width="198" height="56" rx="10" fill="#fff" stroke="#059669" stroke-width="2"/>
+  </g>
+  <text x="533" y="397" text-anchor="middle" class="nt">Clinician</text><text x="533" y="413" text-anchor="middle" class="ns">uploads CT scan</text>
+  <text x="795" y="397" text-anchor="middle" class="nt">Web App</text><text x="795" y="413" text-anchor="middle" class="ns">Next.js</text>
+  <text x="1057" y="397" text-anchor="middle" class="nt">API Gateway</text><text x="1057" y="413" text-anchor="middle" class="ns">FastAPI · REST</text>
+  <text x="1319" y="397" text-anchor="middle" class="nt">Inference</text><text x="1319" y="413" text-anchor="middle" class="ns">champion · ensemble</text>
+
+  <!-- serving chips -->
+  <g>
+    <rect x="752" y="444" width="86" height="17" rx="8.5" fill="#eef2f6"/><text x="795" y="456" text-anchor="middle" class="ct">single / batch</text>
+    <rect x="1011" y="444" width="92" height="17" rx="8.5" fill="#eef2f6"/><text x="1057" y="456" text-anchor="middle" class="ct">API-key · CORS</text>
+    <rect x="1242" y="444" width="90" height="17" rx="8.5" fill="#eef2f6"/><text x="1287" y="456" text-anchor="middle" class="ct">ensemble · TTA</text>
+    <rect x="1338" y="444" width="58" height="17" rx="8.5" fill="#dcfce7"/><text x="1367" y="456" text-anchor="middle" class="ct" fill="#047857">Grad-CAM</text>
+  </g>
+
+  <!-- MONITORING -->
+  <g filter="url(#s)">
+    <rect x="434" y="596" width="198" height="56" rx="10" fill="#fff" stroke="#db2777" stroke-width="1.5"/>
+    <rect x="696" y="596" width="198" height="56" rx="10" fill="#fff" stroke="#db2777" stroke-width="1.5"/>
+    <rect x="958" y="596" width="198" height="56" rx="10" fill="#fff" stroke="#db2777" stroke-width="1.5"/>
+    <rect x="1220" y="596" width="198" height="56" rx="10" fill="#fff" stroke="#db2777" stroke-width="1.5"/>
+  </g>
+  <text x="533" y="621" text-anchor="middle" class="nt">Retrain Gate</text><text x="533" y="637" text-anchor="middle" class="ns">policy decision</text>
+  <text x="795" y="621" text-anchor="middle" class="nt">Drift Detection</text><text x="795" y="637" text-anchor="middle" class="ns">Evidently</text>
+  <text x="1057" y="621" text-anchor="middle" class="nt">Prediction Logs</text><text x="1057" y="637" text-anchor="middle" class="ns">per request</text>
+  <text x="1319" y="621" text-anchor="middle" class="nt">Metrics</text><text x="1319" y="637" text-anchor="middle" class="ns">Prometheus · Grafana</text>
+
+  <!-- monitoring chips -->
+  <g>
+    <rect x="492" y="668" width="82" height="17" rx="8.5" fill="#eef2f6"/><text x="533" y="680" text-anchor="middle" class="ct">margin policy</text>
+    <rect x="745" y="668" width="100" height="17" rx="8.5" fill="#eef2f6"/><text x="795" y="680" text-anchor="middle" class="ct">image + pred feats</text>
+    <rect x="1011" y="668" width="92" height="17" rx="8.5" fill="#eef2f6"/><text x="1057" y="680" text-anchor="middle" class="ct">JSONL · per req</text>
+    <rect x="1259" y="668" width="120" height="17" rx="8.5" fill="#eef2f6"/><text x="1319" y="680" text-anchor="middle" class="ct">confidence · entropy</text>
+  </g>
+
+  </g>
+
+  <!-- ============ LEGEND ============ -->
+  <line x1="128" y1="812" x2="170" y2="812" stroke="#94a3b8" stroke-width="1.6" marker-end="url(#a)"/>
+  <text x="178" y="816" class="el" fill="#475569">request / artifact flow</text>
+  <line x1="372" y1="812" x2="414" y2="812" stroke="#dc2626" stroke-width="1.8" stroke-dasharray="7 5" marker-end="url(#ar)"/>
+  <text x="422" y="816" class="el" fill="#475569">retraining feedback loop</text>
+  <polygon points="640,806 650,812 640,818 630,812" fill="#fff" stroke="#d97706" stroke-width="1.5"/>
+  <text x="660" y="816" class="el" fill="#475569">champion-promotion gate (Δ ≥ margin)</text>
+</svg>
