@@ -159,12 +159,12 @@ class InferenceService:
         # Record custom Prometheus metrics
         try:
             from app.core.metrics import (
-                PREDICTION_CONFIDENCE,
-                PREDICTION_COUNT,
-                PREDICTION_ENTROPY,
                 IMAGE_BRIGHTNESS,
                 IMAGE_CONTRAST,
                 IMAGE_SHARPNESS,
+                PREDICTION_CONFIDENCE,
+                PREDICTION_COUNT,
+                PREDICTION_ENTROPY,
             )
             PREDICTION_COUNT.labels(predicted_class=label).inc()
             PREDICTION_CONFIDENCE.labels(predicted_class=label).observe(confidence)

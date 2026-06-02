@@ -14,14 +14,13 @@ from __future__ import annotations
 
 import argparse
 import sys
-import mlflow
+
 from mlflow.exceptions import RestException
 
 from pulmoscan import logger
 from pulmoscan.config.configuration import ConfigurationManager
 from pulmoscan.monitoring.decisions import should_promote
 from pulmoscan.registry import (
-    ensure_registered_model,
     get_alias_version,
     get_client,
     get_version_metric,

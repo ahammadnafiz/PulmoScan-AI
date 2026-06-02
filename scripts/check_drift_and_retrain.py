@@ -12,15 +12,14 @@ Usage:
 from __future__ import annotations
 
 import argparse
-import glob
 import json
 import os
 import sys
+
 import numpy as np
 import pandas as pd
 import torch
 from PIL import Image
-from torch.utils.data import DataLoader
 
 from pulmoscan import logger
 from pulmoscan.config.configuration import ConfigurationManager
@@ -29,7 +28,7 @@ from pulmoscan.monitoring import extract_image_features, normalized_entropy
 from pulmoscan.monitoring.decisions import decide_retrain
 from pulmoscan.monitoring.drift import run_drift_report
 from pulmoscan.utils.common import get_device
-from pulmoscan.utils.data import build_test_dataset, build_datasets
+from pulmoscan.utils.data import build_datasets
 
 
 def load_model(model_path: str, device) -> torch.nn.Module:
@@ -110,7 +109,7 @@ def load_production_dataset(log_path: str) -> pd.DataFrame:
         return pd.DataFrame()
         
     records = []
-    with open(log_path, "r") as f:
+    with open(log_path) as f:
         for line in f:
             if line.strip():
                 records.append(json.loads(line))

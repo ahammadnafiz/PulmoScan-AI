@@ -38,7 +38,7 @@ async def lifespan(app: FastAPI):
             download_path = mlflow.artifacts.download_artifacts(mv.source)
             model_file = download_path
             if os.path.isdir(download_path):
-                for root, dirs, files in os.walk(download_path):
+                for root, _dirs, files in os.walk(download_path):
                     if "model.pt" in files:
                         model_file = os.path.join(root, "model.pt")
                         break

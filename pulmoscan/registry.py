@@ -17,7 +17,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import mlflow
-from mlflow.exceptions import RestException
 from mlflow.tracking import MlflowClient
 
 from pulmoscan import logger
