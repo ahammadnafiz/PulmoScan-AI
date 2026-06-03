@@ -13,10 +13,9 @@ services:
       API_KEY: ${API_KEY:-}              # set to require X-API-Key on predict routes
     volumes:
       - ./logs:/app/logs
-      # Serve the 5-fold ENSEMBLE instead of the single baked model: uncomment
-      # the mount below. ENSEMBLE_DIR already points at /app/models/folds, so the
-      # API auto-detects the folds and averages them — no other change needed.
-      # - ./artifacts/training/folds:/app/models/folds:ro
+      # Serve the 5-fold ENSEMBLE: ENSEMBLE_DIR points at /app/models/folds,
+      # so the API auto-detects the folds and averages them.
+      - ./artifacts/training/folds:/app/models/folds:ro
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://localhost:8000/api/v1/health/live"]

@@ -72,6 +72,32 @@ never drift apart.
 
 ## Quickstart
 
+### Docker / Makefile Quickstart (Recommended)
+
+To run the entire system locally end-to-end (API, Next.js frontend, and Observability stack), you can use the automated `make` commands.
+
+> [!IMPORTANT]
+> The trained model checkpoints are gitignored and managed by DVC. You **must** run `dvc pull` first to download the weights. Running `make build` and `make up` immediately after cloning without pulling the weights will build a **model-less** container, causing the container's readiness check to fail and `make up` to hang indefinitely.
+
+1. **Pull the model weights and data**:
+   ```bash
+   dvc pull
+   ```
+2. **Mounting the 5-fold Ensemble (Default)**:
+   By default, `docker-compose.yml` mounts the 5-fold ensemble checkpoints from `artifacts/training/folds` into the container.
+   *(Alternatively, to run the single baked-in model instead of the ensemble, comment out the folds volume in `docker-compose.yml` and copy the checkpoint: `cp artifacts/training/model.pt models/model.pt` before building)*.
+3. **Build and start the application**:
+   ```bash
+   make build  # Build the API container
+   make up     # Start API container and wait until it loads the model and is healthy
+   make obs    # Start Observability stack (MLflow on :5050, Prometheus on :9090, Grafana on :3030)
+   make web    # Install dependencies and start the Next.js Web UI on http://localhost:3000
+   ```
+
+---
+
+### Manual Setup (Without Docker)
+
 ```bash
 python -m venv venv && source venv/bin/activate
 pip install -r requirements.txt          # installs torch, app + pulmoscan (editable)
@@ -212,7 +238,7 @@ docker run -p 8000:8000 \
   pulmoscan-ai:latest
 ```
 
-(or uncomment the folds volume in `docker-compose.yml`).
+(which is mounted by default in `docker-compose.yml`).
 
 **Runtime env** (see [Configuration](#configuration-env-vars)): `WORKERS`
 (default 1 — one model in memory; scale out with replicas, not workers),
