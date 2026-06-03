@@ -19,7 +19,7 @@ import io
 import os
 import subprocess
 import sys
-import time
+
 from PIL import Image, ImageEnhance, ImageFilter
 
 from app.services.inference import inference_service
