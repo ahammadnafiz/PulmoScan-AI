@@ -143,6 +143,12 @@ def _summarize(raw: dict[str, Any]) -> DriftSummary:
 
 def _find_drift_block(raw: dict[str, Any]) -> dict[str, Any]:
     """Locate the dict that carries the ``dataset_drift`` verdict, wherever it sits."""
+    # Prioritize metrics that contain drift_by_columns to get full column drift details
+    for metric in raw.get("metrics", []):
+        result = metric.get("result", {}) if isinstance(metric, dict) else {}
+        if "drift_by_columns" in result:
+            return result
+
     for metric in raw.get("metrics", []):
         result = metric.get("result", {}) if isinstance(metric, dict) else {}
         if "dataset_drift" in result or "share_of_drifted_columns" in result:
